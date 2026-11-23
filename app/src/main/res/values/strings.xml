@@ -1,0 +1,24 @@
+<resources>
+    <string name="app_name">AssiSTI</string>
+    <string name="campus_name">STI Sta. Mesa</string>
+    <string name="microsoft_login">Microsoft Log in</string>
+    <string name="admin_login">Admin Log In</string>
+    <string name="google_sign_in">Sign in with Google</string>
+    <string name="history">History</string>
+    <string name="feedback">Feedback</string>
+    <string name="log_out">Log Out</string>
+    <string name="maintenance">Maintenance</string>
+    <string name="lost_and_found">Lost &amp; Found</string>
+    <string name="reports_history">Reports History</string>
+    <string name="upload_image">Upload Image</string>
+    <string name="description">Description</string>
+    <string name="done">Done</string>
+    <string name="next">Next</string>
+    <string name="other_heading">OTHER:</string>
+    <string name="announcement">Announcement</string>
+    <string name="enter_text">Enter text</string>
+    <string name="status">Status</string>
+    <string name="student_label">Student:</string>
+    <string name="issue_label">Issue:</string>
+    <string name="description_label">Description:</string>
+</resources>

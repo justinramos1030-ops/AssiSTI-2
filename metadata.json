@@ -1,0 +1,6 @@
+{
+  "name": "AssiSTI",
+  "description": "Campus maintenance reporting, lost and found tracking, and announcements app for STI Sta. Mesa.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,241 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Authenticated student or admin profile for AssiSTI campus services.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user."
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Student or admin display name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Verified account email address (owner/admin only)."
+        },
+        "campus": {
+          "type": "string",
+          "description": "Campus identifier (e.g. STI Sta. Mesa)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when last updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "displayName", "email", "campus", "createdAt", "updatedAt"]
+    },
+    "AdminRecord": {
+      "title": "AdminRecord",
+      "description": "Read-only admin authorization record keyed by UID.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Admin Firebase UID."
+        },
+        "adminCode": {
+          "type": "string",
+          "description": "Campus admin staff identifier."
+        }
+      },
+      "required": ["userId"]
+    },
+    "Announcement": {
+      "title": "Announcement",
+      "description": "Campus announcement created by an admin and viewed on the AssiSTI dashboard.",
+      "type": "object",
+      "properties": {
+        "authorId": {
+          "type": "string",
+          "description": "Admin UID who created the announcement."
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Display name of the admin author."
+        },
+        "title": {
+          "type": "string",
+          "description": "Announcement headline."
+        },
+        "message": {
+          "type": "string",
+          "description": "Announcement body content."
+        },
+        "campusId": {
+          "type": "string",
+          "description": "Campus scope identifier (sti_sta_mesa)."
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Whether the announcement is active."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["authorId", "authorName", "title", "message", "campusId", "published", "createdAt", "updatedAt"]
+    },
+    "MaintenanceReport": {
+      "title": "MaintenanceReport",
+      "description": "Campus facility maintenance issue reported by a student and tracked by admins.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reporter Firebase UID."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Reporter display name."
+        },
+        "issueCategory": {
+          "type": "string",
+          "description": "Selected maintenance issue category or Other."
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed description of the maintenance issue and location."
+        },
+        "photoBase64": {
+          "type": "string",
+          "description": "Optional compressed JPEG base64 thumbnail of the issue."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["Pending", "On going", "Fixed"],
+          "description": "Workflow status of the maintenance report."
+        },
+        "campusId": {
+          "type": "string",
+          "description": "Campus scope identifier (sti_sta_mesa)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "studentName", "issueCategory", "description", "status", "campusId", "createdAt", "updatedAt"]
+    },
+    "LostFoundItem": {
+      "title": "LostFoundItem",
+      "description": "Lost or found campus item reported by a student and managed by admins.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Reporter Firebase UID."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Reporter display name."
+        },
+        "description": {
+          "type": "string",
+          "description": "Item description and where it was found or lost."
+        },
+        "photoBase64": {
+          "type": "string",
+          "description": "Optional compressed JPEG base64 thumbnail of the item."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["On hold", "Claimed"],
+          "description": "Claim status of the lost & found item."
+        },
+        "campusId": {
+          "type": "string",
+          "description": "Campus scope identifier (sti_sta_mesa)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when created (FieldValue.serverTimestamp())."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when updated (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "studentName", "description", "status", "campusId", "createdAt", "updatedAt"]
+    },
+    "Feedback": {
+      "title": "Feedback",
+      "description": "App and campus service feedback submitted by students.",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Submitter Firebase UID."
+        },
+        "studentName": {
+          "type": "string",
+          "description": "Submitter display name."
+        },
+        "rating": {
+          "type": "integer",
+          "description": "Rating from 1 to 5."
+        },
+        "message": {
+          "type": "string",
+          "description": "Feedback comments."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when submitted (FieldValue.serverTimestamp())."
+        }
+      },
+      "required": ["userId", "studentName", "rating", "message", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Private user profiles isolated to the owner."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRecord" },
+      "description": "Admin role records."
+    },
+    "/announcements/{announcementId}": {
+      "schema": { "$ref": "#/entities/Announcement" },
+      "description": "Campus announcements posted by admins."
+    },
+    "/maintenance_reports/{reportId}": {
+      "schema": { "$ref": "#/entities/MaintenanceReport" },
+      "description": "Student maintenance reports and status tracking."
+    },
+    "/lost_found_items/{itemId}": {
+      "schema": { "$ref": "#/entities/LostFoundItem" },
+      "description": "Campus lost & found item reports."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/Feedback" },
+      "description": "Student feedback submissions."
+    }
+  }
+}

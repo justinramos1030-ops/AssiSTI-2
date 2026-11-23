@@ -1,0 +1,210 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Hardened Helpers
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+    function isBootstrappedAdmin() {
+      return isSignedIn() &&
+        'email_verified' in request.auth.token &&
+        'email' in request.auth.token &&
+        request.auth.token.email_verified == true &&
+        request.auth.token.email == 'justinramos1030@gmail.com';
+    }
+    function isAdmin() {
+      return isBootstrappedAdmin() ||
+        (isSignedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    // 3. Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 80 &&
+        data.email is string && data.email.size() <= 120 &&
+        data.campus is string && data.campus.size() >= 1 && data.campus.size() <= 60 &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidAnnouncement(data) {
+      return data.authorId is string && data.authorId.size() >= 1 && data.authorId.size() <= 128 &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 100 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 1000 &&
+        data.campusId == 'sti_sta_mesa' &&
+        data.published is bool &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidMaintenanceReport(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 80 &&
+        data.issueCategory is string && data.issueCategory.size() >= 1 && data.issueCategory.size() <= 60 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+        (!('photoBase64' in data) || (data.photoBase64 is string && data.photoBase64.size() <= 350000)) &&
+        data.status in ['Pending', 'On going', 'Fixed'] &&
+        data.campusId == 'sti_sta_mesa' &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidLostFoundItem(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 80 &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+        (!('photoBase64' in data) || (data.photoBase64 is string && data.photoBase64.size() <= 350000)) &&
+        data.status in ['On hold', 'Claimed'] &&
+        data.campusId == 'sti_sta_mesa' &&
+        data.createdAt is timestamp && data.createdAt <= request.time &&
+        data.updatedAt is timestamp && data.updatedAt <= request.time;
+    }
+
+    function isValidFeedback(data) {
+      return data.userId is string && data.userId.size() >= 1 && data.userId.size() <= 128 &&
+        data.studentName is string && data.studentName.size() >= 1 && data.studentName.size() <= 80 &&
+        data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+        data.message is string && data.message.size() >= 1 && data.message.size() <= 500 &&
+        data.createdAt is timestamp && data.createdAt <= request.time;
+    }
+
+    // 4. Collection Rules
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && (request.auth.uid == userId || isAdmin());
+      allow list: if isSignedIn() && request.auth.uid == userId;
+
+      allow create: if isSignedIn() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        incoming().userId == request.auth.uid &&
+        incoming().keys().hasAll(['userId', 'displayName', 'email', 'campus', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'displayName', 'email', 'campus', 'createdAt', 'updatedAt']) &&
+        isValidUserProfile(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().email == existing().email &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'campus', 'updatedAt']);
+
+      allow delete: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isBootstrappedAdmin());
+      allow list, create, update, delete: if false;
+    }
+
+    match /announcements/{announcementId} {
+      allow get: if isSignedIn() && isValidId(announcementId);
+      allow list: if isSignedIn() && (isBootstrappedAdmin() || resource.data.campusId == 'sti_sta_mesa');
+
+      allow create: if isSignedIn() &&
+        isValidId(announcementId) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().keys().hasAll(['authorId', 'authorName', 'title', 'message', 'campusId', 'published', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['authorId', 'authorName', 'title', 'message', 'campusId', 'published', 'createdAt', 'updatedAt']) &&
+        isValidAnnouncement(incoming()) &&
+        isAdmin();
+
+      allow update: if isSignedIn() &&
+        isValidId(announcementId) &&
+        isValidAnnouncement(incoming()) &&
+        isAdmin() &&
+        incoming().authorId == existing().authorId &&
+        incoming().campusId == existing().campusId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'message', 'published', 'updatedAt']);
+
+      allow delete: if isSignedIn() && isValidId(announcementId) && isAdmin();
+    }
+
+    match /maintenance_reports/{reportId} {
+      allow get: if isSignedIn() && isValidId(reportId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isBootstrappedAdmin());
+
+      allow create: if isSignedIn() &&
+        isValidId(reportId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'Pending' &&
+        incoming().campusId == 'sti_sta_mesa' &&
+        incoming().keys().hasAll(['userId', 'studentName', 'issueCategory', 'description', 'status', 'campusId', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'studentName', 'issueCategory', 'description', 'photoBase64', 'status', 'campusId', 'createdAt', 'updatedAt']) &&
+        isValidMaintenanceReport(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(reportId) &&
+        isValidMaintenanceReport(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().campusId == existing().campusId &&
+        incoming().createdAt == existing().createdAt &&
+        (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+          (existing().userId == request.auth.uid &&
+           existing().status == 'Pending' &&
+           incoming().status == 'Pending' &&
+           incoming().diff(existing()).affectedKeys().hasOnly(['issueCategory', 'description', 'photoBase64', 'updatedAt']))
+        );
+
+      allow delete: if isSignedIn() && isValidId(reportId) &&
+        (isAdmin() || (existing().userId == request.auth.uid && existing().status == 'Pending'));
+    }
+
+    match /lost_found_items/{itemId} {
+      allow get: if isSignedIn() && isValidId(itemId);
+      allow list: if isSignedIn() && (isBootstrappedAdmin() || resource.data.campusId == 'sti_sta_mesa');
+
+      allow create: if isSignedIn() &&
+        isValidId(itemId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().status == 'On hold' &&
+        incoming().campusId == 'sti_sta_mesa' &&
+        incoming().keys().hasAll(['userId', 'studentName', 'description', 'status', 'campusId', 'createdAt', 'updatedAt']) &&
+        incoming().keys().hasOnly(['userId', 'studentName', 'description', 'photoBase64', 'status', 'campusId', 'createdAt', 'updatedAt']) &&
+        isValidLostFoundItem(incoming());
+
+      allow update: if isSignedIn() &&
+        isValidId(itemId) &&
+        isValidLostFoundItem(incoming()) &&
+        incoming().userId == existing().userId &&
+        incoming().campusId == existing().campusId &&
+        incoming().createdAt == existing().createdAt &&
+        (
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'updatedAt'])) ||
+          (existing().userId == request.auth.uid &&
+           existing().status == 'On hold' &&
+           incoming().status == 'On hold' &&
+           incoming().diff(existing()).affectedKeys().hasOnly(['description', 'photoBase64', 'updatedAt']))
+        );
+
+      allow delete: if isSignedIn() && isValidId(itemId) &&
+        (isAdmin() || (existing().userId == request.auth.uid && existing().status == 'On hold'));
+    }
+
+    match /feedback/{feedbackId} {
+      allow get: if isSignedIn() && isValidId(feedbackId) && (resource.data.userId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && (resource.data.userId == request.auth.uid || isBootstrappedAdmin());
+
+      allow create: if isSignedIn() &&
+        isValidId(feedbackId) &&
+        incoming().userId == request.auth.uid &&
+        incoming().keys().hasAll(['userId', 'studentName', 'rating', 'message', 'createdAt']) &&
+        incoming().keys().hasOnly(['userId', 'studentName', 'rating', 'message', 'createdAt']) &&
+        isValidFeedback(incoming());
+
+      allow update, delete: if false;
+    }
+  }
+}
